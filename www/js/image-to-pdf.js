@@ -1,54 +1,82 @@
 import { PDFDocument } from "pdf-lib";
+const pickBtn = document.getElementById("pickImages");
+const preview = document.getElementById("preview");
+const convertBtn = document.getElementById("convert");
 
-export class ImageToPDF {
-  constructor() {
-    this.images = [];
-  }
+let selectedImages = [];
 
-  async addImage(file) {
-    this.images.push(file);
-  }
+const input = document.createElement("input");
+input.type = "file";
+input.accept = "image/*";
+input.multiple = true;
 
-  clear() {
-    this.images = [];
-  }
+pickBtn.addEventListener("click", () => {
+    input.click();
+});
 
-  async createPDF() {
-    if (this.images.length === 0) {
-      throw new Error("Tidak ada gambar dipilih.");
+input.addEventListener("change", () => {
+
+    preview.innerHTML = "";
+    selectedImages = [];
+
+    Array.from(input.files).forEach(file => {
+
+        selectedImages.push(file);
+
+        const img = document.createElement("img");
+        img.src = URL.createObjectURL(file);
+
+        preview.appendChild(img);
+
+    });
+
+});
+
+convertBtn.addEventListener("click", async () => {
+
+    if(selectedImages.length===0){
+        alert("Silakan pilih gambar terlebih dahulu.");
+        return;
     }
 
     const pdfDoc = await PDFDocument.create();
 
-    for (const file of this.images) {
-      const bytes = new Uint8Array(await file.arrayBuffer());
+    for(const file of selectedImages){
 
-      let image;
+        const bytes = await file.arrayBuffer();
 
-      if (
-        file.type === "image/jpeg" ||
-        file.type === "image/jpg"
-      ) {
-        image = await pdfDoc.embedJpg(bytes);
-      } else if (file.type === "image/png") {
-        image = await pdfDoc.embedPng(bytes);
-      } else {
-        continue;
-      }
+        let image;
 
-      const page = pdfDoc.addPage([
-        image.width,
-        image.height,
-      ]);
+        if(file.type==="image/png"){
+            image = await pdfDoc.embedPng(bytes);
+        }else{
+            image = await pdfDoc.embedJpg(bytes);
+        }
 
-      page.drawImage(image, {
-        x: 0,
-        y: 0,
-        width: image.width,
-        height: image.height,
-      });
+        const page = pdfDoc.addPage([image.width,image.height]);
+
+        page.drawImage(image,{
+            x:0,
+            y:0,
+            width:image.width,
+            height:image.height
+        });
+
     }
 
-    return await pdfDoc.save();
-  }
-}	
+    const pdfBytes = await pdfDoc.save();
+
+const blob = new Blob([pdfBytes], {
+    type: "application/pdf"
+});
+
+const url = URL.createObjectURL(blob);
+
+const a = document.createElement("a");
+a.href = url;
+a.download = "Image-to-PDF.pdf";
+a.click();
+
+URL.revokeObjectURL(url);
+
+alert("PDF berhasil dibuat.");
