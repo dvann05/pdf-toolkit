@@ -70,6 +70,10 @@ return;
 
 }
 
+if (feature === "image-to-pdf") {
+    window.location.href = "pages/image-to-pdf.html";
+}
+
 alert(name+" masih dalam pengembangan.");
 
 }
